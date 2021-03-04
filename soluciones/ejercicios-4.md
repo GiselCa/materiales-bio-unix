@@ -25,7 +25,7 @@ Usando el fichero `aquella_voluntad.txt`, identifica usando grep:
 
 Para contar líneas coincidentes con lo que se pide, emplearemos `grep -c` y una expresión regular. Simplemente usamos el metacaracter `$` para marcar el final de la línea: 
 
-```
+```shell
 abenito@cpg3:~/sesion-iv$ grep -c "o$" aquella_voluntad.txt
 60
 ```
@@ -33,14 +33,14 @@ abenito@cpg3:~/sesion-iv$ grep -c "o$" aquella_voluntad.txt
 #### 2. El número de líneas que terminan por `o` o por `a`
 Igual que en el caso anterior, pero usaremos una clase de caracteres (`[]`) en vez de un único caracter:
 
-```
+```shell
 abenito@cpg3:~/sesion-iv$ grep -c [oa]$ aquella_voluntad.txt
 118
 ```
 
 O usando alternancia (es necesario usar la opción -E):
 
-```
+```shell
 abenito@cpg3:~/sesion-iv$ grep -cE "(o|a)$" aquella_voluntad.txt
 118
 ```
@@ -48,7 +48,7 @@ abenito@cpg3:~/sesion-iv$ grep -cE "(o|a)$" aquella_voluntad.txt
 #### 3. El número de líneas pares que terminan por `o` o por `a`
 Este tiene un poco más de miga. Si consultas el manual, verás que `grep` soporta la opción `-n`, que da el ordinal de lineas que casan con la expresión regular proporcionada: 
 
-```
+```shell
 abenito@cpg3:~/sesion-iv$ grep -n [oa]$ aquella_voluntad.txt | head -n5
 7:a despecho y pesar de la ventura
 12:   Y aún no se me figura que me toca
@@ -59,7 +59,7 @@ abenito@cpg3:~/sesion-iv$ grep -n [oa]$ aquella_voluntad.txt | head -n5
 
 Ahora simplemente tenemos que enlazar esta salida a otro comando grep que identifique los numeros de línea que sean pares. ¿Cuáles son esos? Pues aquellos que terminen en número par: `0,2,4,6,8`. Para hacerlo sencillo, podemos fijarnos en que `grep -n` delimita el número de línea del texto con dos puntos `:`. Entonces, para capturar que la línea sea par, simplemente tendremos que asegurarnos de que el número que va antes de `:` sea uno de la clase `[02468]`:
 
-```
+```shell
 abenito@cpg3:~/sesion-iv$ grep -n [oa]$ aquella_voluntad.txt | grep -c "[02468]:"
 57
 ```
@@ -67,7 +67,7 @@ abenito@cpg3:~/sesion-iv$ grep -n [oa]$ aquella_voluntad.txt | grep -c "[02468]:
 
 Otra forma de conseguir filtrar las líneas pares es usando una dirección con el comando `sed`. En la sección "Addresses" de la página del manual de `sed`, dice:
 
-```
+```shell
 first~step
               Match  every  step'th line starting with line first.  For example, ``sed -n 1~2p''
               will print all the odd-numbered lines in the input stream,  and  the  address  2~5
@@ -77,7 +77,7 @@ first~step
 
 De manera que podemos hacer selecciones de líneas usando esa sintaxis. Además, como no queremos hacer ninguna sustitución, le diremos a `sed` que simplemente imprima (acción `p`). Si probamos ésto con nuestro fichero de texto:
 
-```
+```shell
 abenito@cpg3:~/sesion-iv$ sed '2~2p' voluntad.txt | head
 Aquella voluntad honesta y pura (Garcilaso de la Vega)
 
@@ -93,7 +93,7 @@ a despecho y pesar de la ventura
 
 Vemos que nos **repite** las líneas pares! Claro, como vimos en la sección 3.3, este es el comportamiento por defecto de `sed`. Para decirle que no imprima cuando no se lo indiquemos explícitamente, hemos de usar la opción `-n`. Luego, simplemente engancharemos esta salida a `grep` para que detecte las líneas terminadas en `o` o en `a` como hicimos antes:
 
-```
+```shell
 abenito@cpg3:~/sesion-iv$ sed -n '2~2p' aquella_voluntad.txt | grep -c "[oa]$"
 57
 ```
@@ -104,7 +104,7 @@ El mayor problema que plantea este ejercicio es que hay que considerar todas las
 
 Ahora nos queda dar con el patrón que casa con las palabras que empiezan y terminan por "s". Lo suyo es dividir el problema en dos tareas: primero, extraeremos todas las palabras del texto, y segundo, identificaremos cuáles de esas palabras comienzan y acaban por "s" (también podríamos hacerlo en un paso con el delimitador de comienzo/fin de palabra `\b`). Para lo primero, simplemente haremos:
 
-```
+```shell
 abenito@cpg3:~/sesion-iv$ grep -Eoi "\w+" aquella_voluntad.txt | head -n10
 Aquella
 voluntad
@@ -121,7 +121,7 @@ Aquella
 Y ahora filtramos la lista "pipeando" esta salida a otro grep en el que usaremos los delimitadores de inicio (`^`) y fin (`$`) de línea para indicarle dónde han de ir las "s". Finalmente, la salida de este comando la enlazamos al ya conocido combo `sort | uniq` para que nos saque una lista ordenada por frecuencia de las palabras encontradas:
 
 
-```
+```shell
 abenito@cpg3:~/sesion-iv$ grep -Eo "\w+" aquella_voluntad.txt | grep -i "^s\w*s$" | sort | uniq -c | sort -nr
       7 sus
       2 selvas
@@ -137,7 +137,8 @@ abenito@cpg3:~/sesion-iv$ grep -Eo "\w+" aquella_voluntad.txt | grep -i "^s\w*s$
 
 
 También podemos hacer lo mismo en una sola llamada a `grep` usando el metacaracter de límite de palabra `\b`. Este es un metacaracter "virtual" que está entre un caracter de palabra y otro de "no palabra".
-```
+
+```shell
 abenito@cpg3:~/sesion-iv$ grep -ioE "\bs\w+s\b" aquella_voluntad.txt | sort | uniq -c | sort -nr
       7 sus
       2 selvas
@@ -164,7 +165,7 @@ Bueno, pues, ¿ya estaría resuelto el ejercicio? No!! Y es que todavía ninguna
 
 Por lo tanto, podemos ahorrarnos extraer las palabras o tener que usar el metacaracter `\b` y simplemente usar la expresión regular en su forma más sencilla.
 
-```
+```shell
 abenito@cpg3:~/sesion-iv$ grep -Eiow "s\w+s" aquella_voluntad.txt | sort | uniq 
       7 sus
       2 selvas
@@ -183,7 +184,7 @@ abenito@cpg3:~/sesion-iv$ grep -Eiow "s\w+s" aquella_voluntad.txt | sort | uniq
 #### 5. Todas las palabras que no empiezan por t y acaban por `s` (ordenadas por número de línea)
 Este ejercicio es muy similar al anterior, simplemente modificamos la expresión regular anterior definiendo la clase de caracteres que no son "t": `[^t]`. Además, podemos sacar el número de línea con la opción `-n` (en realidad no será el número de línea, será la posición en el índice total de palabras, pero nos vale para resolver "empates"). Si lo probamos...
 
-```
+```shell
 abenito@cpg3:~/sesion-iv$ grep -nEiow "[^t]\w+s" aquella_voluntad.txt | head -n5
 14:mas
 19:las
@@ -196,7 +197,7 @@ abenito@cpg3:~/sesion-iv$ grep -nEiow "[^t]\w+s" aquella_voluntad.txt | head -n5
 
 Esto representa un problema, porque si tratamos de encontrar palabras únicas, aquellas con espacios u otrs caracteres al principio contarán como entidades separadas, lo cual no sería muy correcto. Así que mejor arreglamos nuestra expresión regular para que coja sólo letras y además lo pasamos todo a minúsculas:
 
-```
+```shell
 abenito@cpg3:~/sesion-iv$ grep -nEiow "[a-z^t]\w+s" aquella_voluntad.txt | tr 'A-Z' 'a-z' | head -n5
 14:mas
 19:las
@@ -208,7 +209,7 @@ abenito@cpg3:~/sesion-iv$ grep -nEiow "[a-z^t]\w+s" aquella_voluntad.txt | tr 'A
 
 Ahora vamos a eliminar palabras repetidas y a ordenarlas de manera que las palabras que aparezcan antes en el texto salgan más arriba en la lista. Pero un simple `sort | uniq` no nos vale ahora. Es necesario eliminar las ocurrencias (lo que va detrás de `:`) repetidas. Para esto, le diremos a `sort` que genere una lista única con la opción `-u` (lo que sería equivalente a `sort | uniq`) considerando la segunda columna (`-k2,2`) y el caracter de división `-t:`:
 
-```
+```shell
 abenito@cpg3:~/sesion-iv$ grep -nEiow "[a-z^t]\w+s" aquella_voluntad.txt | tr 'A-Z' 'a-z' | sort -u -t: -k2,2 | head -n10
 91:abejas
 397:abrojos
@@ -224,7 +225,7 @@ abenito@cpg3:~/sesion-iv$ grep -nEiow "[a-z^t]\w+s" aquella_voluntad.txt | tr 'A
 
 Ahora sólo nos queda volver a ordenar las filas numéricamente con `sort -n` para obtener el resultado esperado:
 
-```
+```shell
 abenito@cpg3:~/sesion-iv$ grep -nEiow "[a-z^t]\w+s" aquella_voluntad.txt | tr 'A-Z' 'a-z' | sort -u -t: -k2,2 | sort -n | head -n10
 14:mas
 19:aguas
@@ -245,7 +246,7 @@ La creación de los índices de palabras es una de las tareas más básicas del 
 #### 6. Todas las palabras que empiezan y acaban por la misma letra (volver a este punto al acabar toda la lección)
 Si intentaste resolver este ejercicio sólo con lo explicado hasta el punto 1 de la lección, quizás te diste cuenta que encontrar una solución implicaba llevar a cabo un proceso manual bastante tedioso. Una manera bastante obvia (e ineficiente) era adaptar la solución del anterior apartado e ir probando todas las letras del alfabeto una por una, así:
 
-```
+```shell
 abenito@cpg3:~/sesion-iv$ grep -Eiow "a\w+a" aquella_voluntad.txt | sort -u | head -n5
 abierta
 abundancia
@@ -271,7 +272,7 @@ Vaya rollo! Si tan solo existiese una manera de decirle a `grep` que queremos qu
 Por suerte, más adelante, en el punto 3.1 de la lección, te mostré que esto se puede conseguir con referencias hacia atrás y grupos de captura! La idea es capturar la primera letra de la palabra en un grupo y referenciarlo desde el último caracter de la palabra. 
 Si adaptamos la expresión regular de los apartados anteriores para que use un grupo de captura, nos queda:
 
-```
+```shell
 abenito@cpg3:~/sesion-iv$ grep -Eiow "([a-z])\w+\1" aquella_voluntad.txt | tr 'A-Z' 'a-z' | sort -u | head -n10
 abierta
 abundancia
@@ -292,7 +293,7 @@ Explora el fichero de anotaciones para ver si existen otros gene_ids con muchos 
 ### Respuesta ejercicio 2
 Este ejercicio es muy parecido al que hicimos en la tercera lección, con la diferencia de que ahora tenemos que crear una expresión regular que nos identique los gene_ids con la forma que nos interesa. Primero echamos un vistazo al fichero de anotaciones de la Drosophila, para ver cómo aparecen los ids:
 
-```
+```shell
 abenito@cpg3:~/sesion-iv/gtfs$ grep -v "^#" Drosophila_melanogaster.BDGP6.28.102.gtf | head -n2 | column -t
 3R  FlyBase  gene        567076  2532932  .  +  .  gene_id  "FBgn0267431";  gene_name      "Myo81F";       gene_source  "FlyBase";  gene_biotype  "protein_coding";
 3R  FlyBase  transcript  567076  2532932  .  +  .  gene_id  "FBgn0267431";  transcript_id  "FBtr0392909";  gene_name    "Myo81F";   gene_source   "FlyBase";         gene_biotype  "protein_coding";  transcript_source  "FlyBase";  transcript_biotype  "protein_coding";
@@ -302,7 +303,7 @@ Aquí podemos observar que nos va a interesar encontrar ocurrencias del tipo `ge
  
 Como sólo habra un `gene_id` por línea, basta con volver a usar la opción `-o` con `grep` para extraer la cadena coincidente. Los ids estarán formados por números y letras, que encaja con la clase de caracteres de palabra (shorthand `\w`). Vamos a ver primero cuántos gene_ids (de cualquier tipo podemos encontrar en cada uno de los ficheros usando la expresión regular `gene_id "\w+"` (date cuenta de que esta expresión se la pasamos a `grep` usando comillas simples, ya que nuestra expresión regular contiene comillas dobles):
 
-```
+```shell
 abenito@cpg3:~/sesion-iv/gtfs$ grep -v "^#" Drosophila_melanogaster.BDGP6.28.102.gtf | wc -l
 543508
 abenito@cpg3:~/sesion-iv/gtfs$ grep -Eo 'gene_id "\w+"' Drosophila_melanogaster.BDGP6.28.102.gtf | sort | uniq | wc -l
@@ -318,7 +319,7 @@ Como se puede ver, el fichero de anotaciones para la _Drosophila Melanogaster_ c
 
 En cualquier punto de la cadena que forma el id, detectaremos apariciones de 3 o más (varios) ceros indicando que puede haber cero o varios caracteres de palabra (`\w*`) antes o después de la secuencia de ceros. Por tanto, creamos la expresión regular `gene_id "\w*0{3}\w*"`, que va a capturar precisamente esto. Fíjate en que no hace falta indicar el límite superior de ceros que queremos encontrar, ya que por definición cualquier cadena con cuatro o más ceros seguidos tendrá también "tres o más". Además, podemos mejorar la presentación de los datos eliminando las comillas dobles con `sed`, y ordenar la lista que obtenemos por número de apariciones de cada id, de mayor a menor (`sort -nr`) creando un fichero intermedio `Drosophila_gene_ids-ordenado.txt`:
 
-```
+```shell
 abenito@cpg3:~/sesion-iv/gtfs$ grep -Eo 'gene_id "\w*0{3}\w*"' Drosophila_melanogaster.BDGP6.28.102.gtf | sed -E 's/gene_id "(\w+)"/\1/' | sort | uniq -c | sort -nr > Drosophila-gene_ids-dist-ordenada.txt
 abenito@cpg3:~/sesion-iv/gtfs$ wc -l Drosophila-gene_ids-dist-ordenada.txt
 1038 Drosophila-gene_ids-dist-ordenada.txt
@@ -334,7 +335,7 @@ O sea, hay 1038 ids de gen de 17807 (~5.8%) que contienen 3 o más ceros.
 
 Y de manera análoga para el gtf del _Homo Sapiens_:
 
-```
+```shell
 abenito@cpg3:~/sesion-iv/gtfs$ zgrep -Eo 'gene_id "\w*0{3}\w*"' Homo_sapiens.GRCh38.102.gtf.gz | sed -E 's/gene_id "(\w+)"/\1/' | sort | uniq -c | sort -nr > HomoSapiens-gene_ids-dist-ordenada.txt
 abenito@cpg3:~/sesion-iv/gtfs$ wc -l HomoSapiens-gene_ids-dist-ordenada.txt
 60675 HomoSapiens-gene_ids-dist-ordenada.txt
@@ -357,7 +358,7 @@ Al final, para cada secuencia, imprimirá su nombre y el número de caracteres q
 
 Como ya nos es conocido, vamos a probar nuestra solución con el fichero `covid-samples.fasta`, que en la sesión anterior pudimos saber que contenía cuatro secuencias y 1.995 líneas en total:
 
-```
+```shell
 abenito@cpg3:~/sesion-iv/fasta$ grep ">" covid-samples.fasta | wc -l
 4
 abenito@cpg3:~/sesion-iv/fasta$ wc -l covid-samples.fasta
@@ -366,7 +367,7 @@ abenito@cpg3:~/sesion-iv/fasta$ wc -l covid-samples.fasta
 
 Quizás te hayas encontrado dificultades al intentar eliminar los saltos de línea directamente con `sed`:
 
-```
+```shell
 abenito@cpg3:~/sesion-iv/fasta$ sed 's/\n//g' covid-samples.fasta | head -n10
 >MW186669.1 |Severe acute respiratory syndrome coronavirus 2 isolate SARS-CoV-2/human/EGY/Cairo-sample 19 MOH/2020, complete genome
 GTTTATACCTTCCCAGGTAACAAACCAACCAACTTTCGATCTCTTGTAGATCTGTTCTCT
@@ -388,7 +389,7 @@ Aunque después de mucho tiempo consiguiésemos dar con la tecla, es más intere
 
 Así que si hacemos esta reflexión, podremos comprobar que en efecto, `sed` no es la herramienta adecuada para eliminar saltos de línea: existe una herramienta diseñada específicamente para este fin (bueno, en realidad para procesar streams de texto caracter a caracter) que hemos visto en clase: `tr`. Pero claro, si le decimos que elimine todos los saltos de línea, vamos a obtener una sóla línea, que no es lo queremos:
 
-```
+```shell
 abenito@cpg3:~/sesion-iv/fasta$ cat covid-samples.fasta | tr -d "\n" | wc -l
 0
 ```
@@ -399,7 +400,7 @@ Para resolver este problema, sólo basta con echarle un poquito de imaginación:
 
 Primero, marcamos antes y después de cada línea con nombres de secuencia (la que empieza con el caracter `>`):
 
-```
+```shell
 abenito@cpg3:~/sesion-iv/fasta$ sed -E 's/^(>.+)/$\1$/' covid-samples.fasta | head -n5
 $>MW186669.1 |Severe acute respiratory syndrome coronavirus 2 isolate SARS-CoV-2/human/EGY/Cairo-sample 19 MOH/2020, complete genome$
 GTTTATACCTTCCCAGGTAACAAACCAACCAACTTTCGATCTCTTGTAGATCTGTTCTCT
@@ -410,7 +411,7 @@ GGCTGCTTACGGTTTCGTCCGTGTTGCAGCCGATCATCAGCACATCTAGGTTTTGTCCGG
 
 Ahora usamos dos llamadas a `tr`, para eliminar y restaurar los saltos de línea:
 
-```
+```shell
 abenito@cpg3:~/sesion-iv/fasta$ sed -E 's/^(>.+)/$\1$/' covid-samples.fasta | tr -d "\n" | tr '$' '\n' | head -n3
 
 >MW186669.1 |Severe acute respiratory syndrome coronavirus 2 isolate SARS-CoV-2/human/EGY/Cairo-sample 19 MOH/2020, complete genome
@@ -420,7 +421,7 @@ GTTTATACCTTCCCAGGTAACAAACCAACCAACTTTCGATCTCTTGTAGATCTGTTCTCTAAACGAACTTTAAAATCTGT
 Como ves, hay un pequeño problema, y es que tenemos un caracter `\n` de más al principio del fichero y uno de menos al final. 
 Lo primero podemos solucionarlo con `tail`, diciéndole que coja a partir de la segunda línea (`-n +2`). Lo segundo lo arreglamos con `sed`, diciéndole que añada una línea vacía después de la última línea. Si consultamos el manual (sección "Addresses"), `$` sirve para indicarle a `sed` que queremos que opere en la última linea (no confundir con el símbolo de "fin de línea" de las expresiones regulares). La línea vacía se indica con el caracter `\` seguido de _nada_, que representa el caracter vacío. Finalmente, salvamos el resultado a un fichero que tendrá el formato deseado:
 
-```
+```shell
 abenito@cpg3:~/sesion-iv/fasta$ sed -E 's/^(>.+)/$\1$/' covid-samples.fasta | tr -d "\n" | tr '$' '\n' | tail -n +2 | sed '$ a \' > covid-samples-unilinea.fasta
 ```
 
@@ -428,7 +429,7 @@ Nota: Recuerda que en POSIX, todos los ficheros de textos [deberían terminar en
 
 Finalmente, comprobamos que el fichero de salida contiene el número de líneas esperado, 8 (4 nombres de secuencia + 4 secuencias).
 
-```
+```shell
 abenito@cpg3:~/sesion-iv/fasta$ wc -l covid-samples-unilinea.fasta
 8 covid-samples-unilinea.fasta
 ```
@@ -440,35 +441,35 @@ En la sección 3.1., convertimos la cadena `chr1:3214482-3216968` a un formato t
 
 Te planteo aquí un par de ejemplos que consiguen lo mismo que la orden original del guión de la práctica, que usaba grupos de captura para formatear la salida:
 
-```
+```shell
 abenito@cpg3:~/sesion-iv$ echo "chr1:3214482-3216968" | sed -E 's/^(chr[^:]+):([0-9]+)-([0-9]+)/\1\t\2\t\3/'
 chr1	3214482	3216968
 ```
 
 Pero no es necesario usar grupos de captura para algo tan sencillo: el enfoque más obvio es primero sustituir el caracter `:` por un tabulador y después hacer lo propio con el caracter `-`:
 
-```
+```shell
 abenito@cpg3:~/sesion-iv$ echo "chr1:3214482-3216968" | sed 's/:/\t/' | sed 's/-/\t/'
 chr1	3214482	3216968
 ```
 
 También podemos juntar ambas en una sola llamada a `sed` definiendo la clase que incluye los delimitadores `:` y `-`. Pero aquí lo más importante es emplear el modificador global `g` para que `sed` efectúe varias sustituciones por línea:
 
-```
+```shell
 abenito@cpg3:~/sesion-iv$ echo "chr1:3214482-3216968" | sed 's/[:-]/\t/g'
 chr1	3214482	3216968
 ```
 
 Como todo lo que queremos sustituir por tabuladores son caracteres de "no palabra", también podemos usar la clase correspondiente `\W` ("w" mayúscula):
 
-```
+```shell
 abenito@cpg3:~/sesion-iv$ echo "chr1:3214482-3216968" | sed 's/\W/\t/g'
 chr1	3214482	3216968
 ```
 
 O usando clases POSIX, negando la clase de caracteres alfanuméricos `[:alnum:]`:
 
-```
+```shell
 abenito@cpg3:~/sesion-iv$ echo "chr1:3214482-3216968" | sed 's/[^[:alnum:]]/\t/g'
 chr1	3214482	3216968
 ```
@@ -494,7 +495,8 @@ En la primera parte del ejercicio se nos pide:
 1. Contar e identificar símbolos en las secuencias no incluidos en {A,C,G,T}. La salida de este conteo la guardaremos a un fichero. 
 2. Eliminar los caracteres extraños de cada secuencia y generar un nuevo fasta. El fasta se guardará a un fichero y también se pasará al siguiente módulo de nuestro pipeline.
 
-#####1.1. Identificar y contar símbolos extraños
+**1.1. Identificar y contar símbolos extraños**
+
 Nuestro primer módulo o subpipeline se encargará de contar caracteres extraños en las secuencias de nuestro fasta de entrada, salvando los resultados a un fichero llamado `no_actg_informe.txt`. Esta operación a su vez se compondrá de 3 pasos :
 
 1. Eliminar las cabeceras del fasta: `grep -v "^>" covid-samples-unilinea.fasta`
@@ -507,7 +509,7 @@ Poniéndolo todo junto, nos queda:
 
 Y si lo ejecutamos:
 
-```
+```shell
 abenito@cpg3:~/sesion-iv/fasta$ grep -v "^>" covid-samples-unilinea.fasta | grep -o "[^ACGT]" | sort | uniq -c | sort -nr > no_actg_informe.txt
 abenito@cpg3:~/sesion-iv/fasta$ cat no_actg_informe.txt
    2602 N
@@ -520,7 +522,8 @@ abenito@cpg3:~/sesion-iv/fasta$ cat no_actg_informe.txt
       1 _
 ```
 
-#####1.2. Eliminar caracteres extraños
+**1.2. Eliminar caracteres extraños**
+
 Ahora usaremos la misma expresión regular del apartado interior para sustituir con `sed` todas las ocurrencias de caracteres extraños en las líneas de secuencia. Esto es lo mismo que decirle a `sed` que sustituya todas las apariciones de `[^ACTG]` en las líneas que **no sean** de nombre de secuencia (es decir, en aquellas que no empiecen por el caracter `>`). ¿Cómo podemos hacer que `sed` trabaje sólo en ciertas líneas? De nuevo, la explicación podemos encontrarla en la sección del manual "Addresses" que explica esto. En concreto, nos fijamos en dos partes de esta sección. En una dice:
 
 ```
@@ -530,7 +533,7 @@ Ahora usaremos la misma expresión regular del apartado interior para sustituir 
 
 Así que no sólo vamos a poder pasar números de línea antes de la acción, sino que además también podemos especificar una expresión regular para seleccionar las líneas en las que queremos efectuar la edición. Ahora, para seleccionar las líneas de secuencia del fasta, podemos usar o bien la expresión regular "no empieza por `>`" (`^[^>]`), o bien, si seguimos leyendo el manual...
 
-```
+```shell
 After  the address (or address-range), and before the command, a !  may be inserted, which specifies that the command shall only be executed if the address (or address-
        range) does not match.
 ```
@@ -545,12 +548,13 @@ o bien:
 
 produciendo el mismo resultado. 
 
-#####1.3. Unir 1.1 y 1.2
+**1.3. Unir 1.1 y 1.2**
+
 Para concluir con la implementación del primer módulo, sólo nos resta juntar las órdenes de los puntos 1.1 y 1.2. Como hemos explicado antes, tanto el pipeline 1.1. como el 1.2 reciben los mismos datos de entrada (`covid-samples-unilinea.fasta`), produciendo cada uno de ellos una salida distinta. Esto implica que tenemos que bifurcar nuestro flujo de datos de entrada para pasárselo a cada uno por separado, produciendo dos resultados distintos. Como ya sabemos, la orden de la shell que sirve este propósito es `tee`. 
 
 En vez de sacar una de las salida de `tee` directamente a un fichero, lo que haremos será pasarle a todo el pipeline 1.1. los datos usando una redirección (`>`). A su vez, el pipeline 1.1 procesará los datos y los guardará a un fichero como hemos explicado. La otra salida de `tee` se la pasaremos al pipeline 1.2., que a su vez llamará otra vez `tee`, que bifurcará su entrada a un fichero fasta "limpio" y a un pipe que se comunicará con el siguiente módulo encargado de generar los mapas de frecuencias.
 
-```
+```shell
 abenito@cpg3:~/sesion-iv/fasta$ cat covid-samples-unilinea.fasta | tee >(grep -v "^>" | grep -o "[^ACGT]" | sort | uniq -c > no_actg_informe.txt) | sed '/>/!s/[^ACGT]//g' | tee covid_samples-unilinea_limpio.fasta | less
 ```
 
@@ -559,7 +563,8 @@ En este punto nos centraremos en la tarea de crear un mapa de frecuencias para c
 
 Comenzaremos primero por crear un csv y un informe de acuerdo al punto 3 del enunciado. Después continuaremos al punto 4, y realizaremos las modificaciones necesarias para que `awk` recupere el valor de la variable `PORCIONES` y genere el mapa de frecuencias para cada uno de los trozos que resulten de partir cada secuencia en `$PORCIONES` trozos iguales.
 
-#####2.1. Paso 3: Mapa de frecuencias simple
+**2.1. Paso 3: Mapa de frecuencias simple**
+
 Para obtener el mapa de frecuencias de nucleótidos de cada secuencia contenida en `covid_samples-unilinea_limpio.fasta`, vamos a crear un código `awk` que emplee arrays asociativos (diccionarios) para ir incrementeando la cuenta de cada nucleótido según lo vaya encontrando.
 
 Ya que `awk` trabaja con líneas y nosotros queremos contar caracteres, es mucho más intuitivo sacar cada caracter de cada secuencia a una línea (como hicimos en el pipeline 1.1 con `grep -o "[^ACGT]"`) y procesar esa entrada que no dejarla como está (una secuencia por línea) y emplear las [funciones de manipulación de cadenas](https://www.gnu.org/software/gawk/manual/html_node/String-Functions.html) de `awk`.
@@ -568,7 +573,7 @@ Como hicimos en el pipeline 1.1 con `grep -o "[^ACGT]"`, vamos primero a sacar c
 
 Para sacar los caracteres a sus respectivas líneas, usaremos un grupo de captura `([ACTG])` y una referencia hacia atrás a este grupo para insertar un salto de línea detrás de cada caracter que encuentre en cada una de las líneas de entrada. 
 
-```
+```shell
 abenito@cpg3:~/sesion-iv/fasta$ sed -E '/^>/!s/([ACTG])/\1\n/g' covid_samples-unilinea_limpio.fasta | head -n10
 >MW186669.1 |Severe acute respiratory syndrome coronavirus 2 isolate SARS-CoV-2/human/EGY/Cairo-sample 19 MOH/2020, complete genome
 G
@@ -584,7 +589,7 @@ C
 
 Además, como también queremos calcular las frecuencias relativas de cada nucleótido, vamos a necesitar conocer la longitud de cada secuencia. Podríamos emplear un contador en `awk` que se fuese incrementando por cada caracter (línea) leída, o usando la variable interna `NR`. Pero si reparamos en lo que se nos pide hacer en el punto 4, es mejor precalcularla antes de pasarle los datos a `awk`. ¿Por qué? Porque nos va a ser mucho más sencillo partir las secuencias sabiendo de antemano cuál es la longitud total de cada una: tal como hemos planteado la solución, cada línea va a contener un único carácter. Por lo tanto, `awk` no va a saber cuántos caracteres quedan por procesar en la secuencia actual y no sabríamos saber en tiempo de ejecución donde termina una parte y empieza la siguiente. Este problema se puede solucionar fácilmente añadiendo una línea con la longitud de la secuencia justo debajo de la que contiene el nombre de la misma. Para ello, usaremos la función `length` de `awk` que, según el manual, va a imprimir la longitud de todo el registro `$0` si no se le pasan argumentos:
 
-```
+```shell
 length([s]) 	Return  the  length  of the string s, or the length of $0 if s is not supplied.  
 				As a non-standard extension, with an array argument, length() returns the number of elements in the array.
 ```
@@ -593,7 +598,7 @@ length([s]) 	Return  the  length  of the string s, or the length of $0 if s is n
 El script es el siguiente:
 
 
-```
+```shell
 abenito@cpg3:~/sesion-iv/fasta$ awk '$0 ~ "^>" {print $0}; $0 ~ "^[ACTG]"{ print length "\n" $0 }' covid_samples-unilinea_limpio.fasta | head -n3
 >MW186669.1 |Severe acute respiratory syndrome coronavirus 2 isolate SARS-CoV-2/human/EGY/Cairo-sample 19 MOH/2020, complete genome
 29853
@@ -603,7 +608,7 @@ GTTTATACCTTCCCAGGTAACAAACCAACCAACTTTCGATCTCTTGTAGATCTGTTCTCTAAACGAACTTTAAAATCTGT
 Como se puede observar, el script añade una línea con la longitud de la secuencia en caracteres (29853) que va inmediatamente debajo.
 Ahora ya sí, esto se lo pasamos a `sed` para que parta las líneas con secuencias en caracteres:
 
-```
+```shell
 abenito@cpg3:~/sesion-iv/fasta$ awk '$0 ~ "^>" {print $0}; $0 ~ "^[ACTG]"{ print length "\n" $0 }' covid_samples-unilinea_limpio.fasta | sed -E '/^>/!s/([ACTG])/\1\n/g' | head
 >MW186669.1 |Severe acute respiratory syndrome coronavirus 2 isolate SARS-CoV-2/human/EGY/Cairo-sample 19 MOH/2020, complete genome
 29853
@@ -619,7 +624,7 @@ C
 
 Una vez que ya tenemos el fichero en el formato deseado, sólo es cuestión de crear un script en `awk` que cuente los caracteres que vaya encontrando en cada línea. Para que se entienda mejor lo he movido a su propio archivo (`genera_informe.awk`) que reproduzco aquí debajo (también puedes encontrarlo entre los ficheros de este repositorio).
 
-```
+```awk
 #!/usr/bin/awk -f
 
 #Bloque 0: A ejecutar antes de empezar el procesamiento
@@ -668,10 +673,11 @@ END {
 Como ves, la lógica del script es muy sencilla y su implementación se parece mucho a la de Python. Además, yo he optado por generar el informe directamente desde awk usando los operadores redirección `>` y `>>` (sección "I/O Statements" del manual de `awk`). Aunque podríamos optar también por coger la salida de `awk` y formatearla un poco antes de volcarla a un fichero desde la shell siguiendo el método habitual, es mejor y más rápido hacerlo de esta manera.
 
 
-#####2.2. Paso 4: Mapa de frecuencias usando la variable de la shell PORCIONES
+**2.2. Paso 4: Mapa de frecuencias usando la variable de la shell PORCIONES**
+
 Para terminar con este ejercicio, vamos a adaptar nuestra solución para que acepte una variable definida en la shell, `PORCIONES`, que nos dirá cuántos mapas de frecuencias (uno por cada porción) tendremos que crear. El primer reto de este punto consiste en saber cómo pasarle variables definidas en la shell a `awk`. Aunque, como hemos visto, `awk` usa variables, éstas son sólo internas y no pueden ser accedidas desde fuera del script (imagínate si no qué lío!). Análogamente, un script `awk` _por defecto_ tampoco puede leer variables definidas fuera de él. He aquí una prueba:
 
-```
+```shell
 abenito@cpg3:~/sesion-iv/fasta$ PORCIONES=4
 abenito@cpg3:~/sesion-iv/fasta$ awk 'BEGIN { print "Esto funciona?? La variable PORCIONES vale " PORCIONES "??"}' covid_samples-unilinea_limpio.fasta
 Esto funciona?? La variable PORCIONES vale ??
@@ -687,14 +693,14 @@ Al imprimir la variable PORCIONES, que no está definida, no obtenemos el result
 
 Entonces, si invocamos awk con la opción `-v`, podemos asignar el valor de la variable de la shell `$PORCIONES` a una variable interna de awk llamada `PORCIONES` (aunque podríamos llamarla como quisiéramos):
 
-```
+```shell
 abenito@cpg3:~/sesion-iv/fasta$ awk -v PORCIONES=$PORCIONES 'BEGIN { print "Esto funciona?? La variable PORCIONES vale " PORCIONES "??"}' covid_samples-unilinea_limpio.fasta
 Esto funciona?? La variable PORCIONES vale 4??
 ```
 
 Ahora ya podemos modificar nuestro script (`genera_informe_seqs.awk`) para que utilice esta variable. Como hacíamos en la asignatura de Python, creamos un mapa de frecuencias por cada secuencia y porción. La única diferencia es que aquí no hay que recorrer las líneas...(ya lo hace `awk` por nosotras!). Además, guardamos dónde termina cada porción de cada secuencia para cambiar de mapa de frecuencias cuando toque. Finalmente, imprimimos los resultados y añadimos una nueva columna a nuestro CSV. Te dejo aquí el código comentado:
 
-```
+```awk
 #!/usr/bin/awk -f
 
 #Bloque 0: A ejecutar antes de empezar el procesamiento
@@ -772,15 +778,15 @@ Como ves, el script es un poco largo y si bien es cierto que cuando empecemos a 
 
 Si juntamos los pipelines que hemos ido creando en cada uno de los pasos al final nos queda: 
 
-**informes simples:**
+**3.1. Informes Simples:**
 
-```
+```shell
 abenito@cpg3:~/sesion-iv/fasta$ cat covid-samples-unilinea.fasta | tee >(grep -v "^>" | grep -o "[^ACGT]" | sort | uniq -c > no_actg_informe.txt) | sed '/>/!s/[^ACGT]//g' | tee covid_samples-unilinea_limpio.fasta | awk '$0 ~ "^>" {print $0}; $0 ~ "^[ACTG]"{ print length "\n" $0 }' | sed -E '/^>/!s/([ACTG])/\1\n/g' | awk -f genera_informe.awk
 ```
 
-**informes por porciones:**
+**3.2. Informes por Porciones:**
 
-```
+```shell
 abenito@cpg3:~/sesion-iv/fasta$ cat covid-samples-unilinea.fasta | tee >(grep -v "^>" | grep -o "[^ACGT]" | sort | uniq -c > no_actg_informe.txt) | sed '/>/!s/[^ACGT]//g' | tee covid_samples-unilinea_limpio.fasta | awk '$0 ~ "^>" {print $0}; $0 ~ "^[ACTG]"{ print length "\n" $0 }' | sed -E '/^>/!s/([ACTG])/\1\n/g' | awk -v porciones=$PORCIONES -f genera_informe_porciones.awk
 ```
 
